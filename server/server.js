@@ -5,6 +5,7 @@ const cors = require('cors')
 const cookieParser = require('cookie-parser')
 const authRoutes = require('./routes/auth')
 const eventRoutes = require('./routes/events')
+const redis = require('./config/redis')
 
 const app = express()
 
@@ -23,45 +24,30 @@ app.use(cors({
 app.use(express.json())
 app.use(cookieParser())
 
-// MongoDB connection med retry logic
-const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 45000,
-    })
-    console.log('✅ MongoDB Atlas forbindelse etableret')
-  } catch (err) {
-    console.error('❌ MongoDB Atlas forbindelsesfejl:', err)
-    // Retry connection
-    setTimeout(connectDB, 5000)
+// Test Redis connection
+try {
+  await redis.set('test', 'connection')
+  const testResult = await redis.get('test')
+  if (testResult === 'connection') {
+    console.log('✅ Redis forbindelse etableret')
+    await redis.del('test')
   }
+} catch (error) {
+  console.error('❌ Redis forbindelsesfejl:', error)
+  process.exit(1)
 }
-
-connectDB()
-
-// MongoDB error handling
-mongoose.connection.on('error', (err) => {
-  console.error('MongoDB forbindelsesfejl:', err)
-})
-
-mongoose.connection.on('disconnected', () => {
-  console.log('MongoDB forbindelse afbrudt. Forsøger at genoprette...')
-  connectDB()
-})
 
 // Routes
 app.use('/api/auth', authRoutes)
 app.use('/api/events', eventRoutes)
 
-// Global error handling
+// Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Server fejl:', err.stack)
+  console.error('Server fejl:', err)
   res.status(500).json({ 
     message: 'Der opstod en fejl på serveren',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
   })
 })
 
@@ -81,4 +67,23 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (err) => {
   console.error('Unhandled Rejection:', err)
   process.exit(1)
+})
+
+// Add test endpoint
+app.get('/api/test', async (req, res) => {
+  try {
+    await redis.set('test', 'Hello from Redis!')
+    const result = await redis.get('test')
+    await redis.del('test')
+    res.json({ 
+      message: 'API og Redis forbindelse OK',
+      redisTest: result
+    })
+  } catch (error) {
+    console.error('Test endpoint fejl:', error)
+    res.status(500).json({ 
+      message: 'Fejl i test endpoint',
+      error: error.message
+    })
+  }
 }) 
