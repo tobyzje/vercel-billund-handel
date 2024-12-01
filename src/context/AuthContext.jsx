@@ -60,13 +60,19 @@ export function AuthProvider({ children }) {
           data: {
             name,
             role: 'user'
-          }
+          },
+          emailRedirectTo: `${window.location.origin}/auth/callback`
         }
       })
 
-      if (error) throw error
+      if (error) {
+        console.error('Registration error:', error)
+        throw error
+      }
+
       return data.user
     } catch (err) {
+      console.error('Registration error:', err)
       setError(err.message)
       throw err
     } finally {

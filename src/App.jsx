@@ -5,6 +5,8 @@ import Login from './components/auth/Login'
 import Register from './components/auth/Register'
 import EventList from './components/events/EventList'
 import { useRealtime } from './hooks/useRealtime'
+import { useEffect } from 'react'
+import { supabase } from './config/supabase'
 
 function ProtectedRoute({ children, allowedRoles = [] }) {
   const { user, loading } = useAuth()
@@ -18,6 +20,18 @@ function ProtectedRoute({ children, allowedRoles = [] }) {
   }
 
   return children
+}
+
+function AuthCallback() {
+  useEffect(() => {
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN') {
+        window.location.href = '/'
+      }
+    })
+  }, [])
+
+  return <div>Bekræfter login...</div>
 }
 
 function App() {
@@ -39,6 +53,7 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          <Route path="/auth/callback" element={<AuthCallback />} />
         </Route>
       </Routes>
     </Router>
