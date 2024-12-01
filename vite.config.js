@@ -19,5 +19,18 @@ export default defineConfig({
       overlay: true,
       clientPort: 5173
     }
+  },
+  build: {
+    rollupOptions: {
+      external: ['@supabase/supabase-js'],
+      output: {
+        globals: {
+          '@supabase/supabase-js': 'supabase'
+        }
+      }
+    }
+  },
+  optimizeDeps: {
+    include: ['@supabase/supabase-js']
   }
 })
