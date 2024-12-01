@@ -9,29 +9,19 @@ export function AuthProvider({ children }) {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    // Lyt til auth ændringer
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    // Initial session check
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
       setLoading(false)
     })
 
-    // Initial session check
-    checkAuth()
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
 
     return () => subscription.unsubscribe()
   }, [])
-
-  const checkAuth = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession()
-      setUser(session?.user ?? null)
-    } catch (err) {
-      console.error('Auth check fejl:', err)
-      setUser(null)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const login = async (email, password) => {
     try {
@@ -53,6 +43,11 @@ export function AuthProvider({ children }) {
     }
   }
 
+  const logout = async () => {
+    const { error } = await supabase.auth.signOut()
+    if (error) console.error('Logout error:', error)
+  }
+
   const register = async (name, email, password) => {
     try {
       setLoading(true)
@@ -64,7 +59,7 @@ export function AuthProvider({ children }) {
         options: {
           data: {
             name,
-            role: 'user' // Default role
+            role: 'user'
           }
         }
       })
@@ -76,16 +71,6 @@ export function AuthProvider({ children }) {
       throw err
     } finally {
       setLoading(false)
-    }
-  }
-
-  const logout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut()
-      if (error) throw error
-      setUser(null)
-    } catch (err) {
-      console.error('Logout fejlede:', err)
     }
   }
 

@@ -21,21 +21,14 @@ function ProtectedRoute({ children, allowedRoles = [] }) {
 }
 
 function App() {
-  const { checkAuth } = useAuth()
-
-  useEffect(() => {
-    checkAuth()
-  }, [])
-
   return (
     <Router>
       <Routes>
         <Route path="/" element={<Layout />}>
-          {/* Offentlige routes */}
+          <Route index element={<Navigate to="/events" replace />} />
+          <Route path="events" element={<EventList />} />
           <Route path="login" element={<Login />} />
           <Route path="opret-konto" element={<Register />} />
-
-          {/* Admin routes */}
           <Route 
             path="admin/*" 
             element={
