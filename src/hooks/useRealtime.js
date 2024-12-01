@@ -6,9 +6,8 @@ export function useRealtime() {
   const { fetchEvents } = useEventStore()
 
   useEffect(() => {
-    // Subscribe til events tabel
-    const subscription = supabase
-      .channel('events-channel')
+    const channel = supabase
+      .channel('events-changes')
       .on(
         'postgres_changes',
         {
@@ -17,14 +16,18 @@ export function useRealtime() {
           table: 'events'
         },
         () => {
-          // Opdater events når der sker ændringer
           fetchEvents(true)
         }
       )
-      .subscribe()
+
+    channel.subscribe((status) => {
+      if (status === 'SUBSCRIBED') {
+        console.log('Realtime subscription active')
+      }
+    })
 
     return () => {
-      subscription.unsubscribe()
+      channel.unsubscribe()
     }
-  }, [])
+  }, [fetchEvents])
 } 

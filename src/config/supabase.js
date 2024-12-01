@@ -14,8 +14,10 @@ const supabaseOptions = {
     persistSession: true,
     detectSessionInUrl: true
   },
-  db: {
-    schema: 'public'
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
   }
 }
 
