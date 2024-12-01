@@ -52,16 +52,18 @@ User.init({
 }, {
   sequelize,
   modelName: 'User',
+  tableName: 'users',
   timestamps: true,
-  hooks: {
-    beforeCreate: async (user) => {
-      user.password = await User.hashPassword(user.password)
-    },
-    beforeUpdate: async (user) => {
-      if (user.changed('password')) {
-        user.password = await User.hashPassword(user.password)
-      }
-    }
+  underscored: true
+})
+
+User.beforeCreate(async (user) => {
+  user.password = await User.hashPassword(user.password)
+})
+
+User.beforeUpdate(async (user) => {
+  if (user.changed('password')) {
+    user.password = await User.hashPassword(user.password)
   }
 })
 

@@ -1,48 +1,27 @@
 import { Sequelize } from 'sequelize'
-import 'dotenv/config'
+import pg from 'pg'
 
-const sequelize = new Sequelize({
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  database: process.env.DB_NAME,
-  username: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  dialect: 'mysql',
+const sequelize = new Sequelize(process.env.POSTGRES_URL, {
+  dialect: 'postgres',
+  dialectModule: pg,
   dialectOptions: {
-    connectTimeout: 60000,
-    ssl: null,
-    supportBigNumbers: true,
-    bigNumberStrings: true
+    ssl: {
+      require: true,
+      rejectUnauthorized: false
+    },
+    keepAlive: true
   },
   pool: {
-    max: 5,
+    max: 20,
     min: 0,
-    acquire: 30000,
+    acquire: 60000,
     idle: 10000
-  },
-  logging: true
+  }
 })
 
-// Test forbindelsen før export
-async function testConnection() {
-  try {
-    await sequelize.authenticate()
-    console.log('✅ Database forbindelse testet og OK')
-    
-    // Log connection info for debugging
-    console.log('Database connection info:', {
-      host: process.env.DB_HOST,
-      port: process.env.DB_PORT,
-      database: process.env.DB_NAME,
-      user: process.env.DB_USER
-    })
-  } catch (error) {
-    console.error('❌ Kunne ikke forbinde til databasen:', error.original || error)
-    throw error
-  }
-}
-
-// Kør test men lad fejl propagere
-testConnection().catch(console.error)
+// Test forbindelsen
+sequelize.authenticate()
+  .then(() => console.log('✅ Database forbindelse etableret'))
+  .catch(err => console.error('❌ Database forbindelsesfejl:', err))
 
 export default sequelize 
