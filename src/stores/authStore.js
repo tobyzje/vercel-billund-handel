@@ -1,4 +1,4 @@
-import create from 'zustand'
+import { create } from 'zustand'
 import { supabase } from '../config/supabase'
 
 export const useAuthStore = create((set) => ({
