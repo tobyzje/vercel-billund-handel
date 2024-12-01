@@ -75,12 +75,13 @@ export function AuthProvider({ children }) {
     try {
       setLoading(true)
       setError(null)
-
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: { name, role: 'user' }
+          data: { name, role: 'user' },
+          emailRedirectTo: 'https://billund-handelsforening.vercel.app/auth/callback'
         }
       })
 
