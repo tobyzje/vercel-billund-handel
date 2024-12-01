@@ -9,15 +9,19 @@ export function AuthProvider({ children }) {
   const [error, setError] = useState(null)
 
   useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN') {
+        setUser(session?.user ?? null)
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null)
+      }
+      setLoading(false)
+    })
+
     // Initial session check
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
       setLoading(false)
-    })
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
     })
 
     return () => subscription.unsubscribe()
@@ -27,15 +31,25 @@ export function AuthProvider({ children }) {
     try {
       setLoading(true)
       setError(null)
-      
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
-        password
+        password,
       })
 
-      if (error) throw error
+      if (error) {
+        console.error('Login error:', error)
+        throw new Error(error.message)
+      }
+
+      if (!data?.user) {
+        throw new Error('Ingen bruger fundet')
+      }
+
+      setUser(data.user)
       return data.user
     } catch (err) {
+      console.error('Login error:', err)
       setError(err.message)
       throw err
     } finally {
@@ -44,35 +58,36 @@ export function AuthProvider({ children }) {
   }
 
   const logout = async () => {
-    const { error } = await supabase.auth.signOut()
-    if (error) console.error('Logout error:', error)
+    try {
+      setLoading(true)
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+      setUser(null)
+    } catch (err) {
+      console.error('Logout error:', err)
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const register = async (name, email, password) => {
     try {
       setLoading(true)
       setError(null)
-      
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          data: {
-            name,
-            role: 'user'
-          },
-          emailRedirectTo: `${window.location.origin}/auth/callback`
+          data: { name, role: 'user' }
         }
       })
 
-      if (error) {
-        console.error('Registration error:', error)
-        throw error
-      }
-
+      if (error) throw error
       return data.user
     } catch (err) {
-      console.error('Registration error:', err)
+      console.error('Register error:', err)
       setError(err.message)
       throw err
     } finally {
