@@ -1,12 +1,10 @@
-require('dotenv').config()
-const express = require('express')
-const mongoose = require('sequelize')
-const cors = require('cors')
-const cookieParser = require('cookie-parser')
-const authRoutes = require('./routes/auth')
-const eventRoutes = require('./routes/events')
-const redis = require('./config/redis')
-const sequelize = require('./config/database.js')
+import 'dotenv/config'
+import express from 'express'
+import cors from 'cors'
+import cookieParser from 'cookie-parser'
+import sequelize from './config/database.js'
+import authRoutes from './routes/auth.js'
+import eventRoutes from './routes/events.js'
 
 const app = express()
 
@@ -25,25 +23,11 @@ app.use(cors({
 app.use(express.json())
 app.use(cookieParser())
 
-// Test Redis connection
-try {
-  await redis.set('test', 'connection')
-  const testResult = await redis.get('test')
-  if (testResult === 'connection') {
-    console.log('✅ Redis forbindelse etableret')
-    await redis.del('test')
-  }
-} catch (error) {
-  console.error('❌ Redis forbindelsesfejl:', error)
-  process.exit(1)
-}
-
 // Test database connection
 try {
   await sequelize.authenticate()
   console.log('✅ Database forbindelse etableret')
   
-  // Sync models (i development)
   if (process.env.NODE_ENV === 'development') {
     await sequelize.sync({ alter: true })
     console.log('✅ Database modeller synkroniseret')
@@ -83,23 +67,4 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (err) => {
   console.error('Unhandled Rejection:', err)
   process.exit(1)
-})
-
-// Add test endpoint
-app.get('/api/test', async (req, res) => {
-  try {
-    await redis.set('test', 'Hello from Redis!')
-    const result = await redis.get('test')
-    await redis.del('test')
-    res.json({ 
-      message: 'API og Redis forbindelse OK',
-      redisTest: result
-    })
-  } catch (error) {
-    console.error('Test endpoint fejl:', error)
-    res.status(500).json({ 
-      message: 'Fejl i test endpoint',
-      error: error.message
-    })
-  }
 }) 

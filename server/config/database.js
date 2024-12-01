@@ -1,4 +1,5 @@
 import { Sequelize } from 'sequelize'
+import 'dotenv/config'
 
 const sequelize = new Sequelize({
   host: process.env.DB_HOST,
@@ -9,10 +10,9 @@ const sequelize = new Sequelize({
   dialect: 'mysql',
   dialectOptions: {
     connectTimeout: 60000,
-    // SSL konfiguration hvis nødvendigt
-    ssl: {
-      rejectUnauthorized: false
-    }
+    ssl: null,
+    supportBigNumbers: true,
+    bigNumberStrings: true
   },
   pool: {
     max: 5,
@@ -20,20 +20,7 @@ const sequelize = new Sequelize({
     acquire: 30000,
     idle: 10000
   },
-  retry: {
-    match: [
-      /Deadlock/i,
-      /SequelizeConnectionError/,
-      /SequelizeConnectionRefusedError/,
-      /SequelizeHostNotFoundError/,
-      /SequelizeHostNotReachableError/,
-      /SequelizeInvalidConnectionError/,
-      /SequelizeConnectionTimedOutError/,
-      /TimeoutError/
-    ],
-    max: 3
-  },
-  logging: process.env.NODE_ENV === 'development' ? console.log : false
+  logging: true
 })
 
 // Test forbindelsen før export
@@ -41,12 +28,21 @@ async function testConnection() {
   try {
     await sequelize.authenticate()
     console.log('✅ Database forbindelse testet og OK')
+    
+    // Log connection info for debugging
+    console.log('Database connection info:', {
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT,
+      database: process.env.DB_NAME,
+      user: process.env.DB_USER
+    })
   } catch (error) {
-    console.error('❌ Kunne ikke forbinde til databasen:', error)
+    console.error('❌ Kunne ikke forbinde til databasen:', error.original || error)
     throw error
   }
 }
 
-testConnection()
+// Kør test men lad fejl propagere
+testConnection().catch(console.error)
 
 export default sequelize 

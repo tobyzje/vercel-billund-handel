@@ -1,7 +1,9 @@
-const router = require('express').Router()
-const User = require('../models/User')
-const jwt = require('jsonwebtoken')
-const auth = require('../middleware/auth')
+import { Router } from 'express'
+import jwt from 'jsonwebtoken'
+import User from '../models/User.js'
+import auth from '../middleware/auth.js'
+
+const router = Router()
 
 // Tilføj denne test route øverst i filen
 router.get('/test', async (req, res) => {
@@ -256,4 +258,4 @@ router.post('/upgrade-to-webmaster', async (req, res) => {
   }
 })
 
-module.exports = router 
+export default router 

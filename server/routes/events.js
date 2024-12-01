@@ -1,7 +1,9 @@
-const router = require('express').Router()
-const Event = require('../models/Event')
-const auth = require('../middleware/auth')
-const { upload, cloudinary } = require('../config/cloudinary')
+import { Router } from 'express'
+import Event from '../models/Event.js'
+import auth from '../middleware/auth.js'
+import { upload, cloudinary } from '../config/cloudinary.js'
+
+const router = Router()
 
 // Tilføj denne test route øverst i filen
 router.get('/test-cloudinary', async (req, res) => {
@@ -92,4 +94,4 @@ router.delete('/:id', auth, async (req, res) => {
   }
 })
 
-module.exports = router 
+export default router 
