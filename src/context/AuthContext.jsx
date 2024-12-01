@@ -9,21 +9,21 @@ export function AuthProvider({ children }) {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    checkAuth()
-    
     // Lyt til auth ændringer
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null)
       setLoading(false)
     })
+
+    // Initial session check
+    checkAuth()
 
     return () => subscription.unsubscribe()
   }, [])
 
   const checkAuth = async () => {
     try {
-      const { data: { session }, error } = await supabase.auth.getSession()
-      if (error) throw error
+      const { data: { session } } = await supabase.auth.getSession()
       setUser(session?.user ?? null)
     } catch (err) {
       console.error('Auth check fejl:', err)
@@ -53,16 +53,6 @@ export function AuthProvider({ children }) {
     }
   }
 
-  const logout = async () => {
-    try {
-      const { error } = await supabase.auth.signOut()
-      if (error) throw error
-      setUser(null)
-    } catch (err) {
-      console.error('Logout fejlede:', err)
-    }
-  }
-
   const register = async (name, email, password) => {
     try {
       setLoading(true)
@@ -72,7 +62,10 @@ export function AuthProvider({ children }) {
         email,
         password,
         options: {
-          data: { name }
+          data: {
+            name,
+            role: 'user' // Default role
+          }
         }
       })
 
@@ -86,14 +79,24 @@ export function AuthProvider({ children }) {
     }
   }
 
+  const logout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+      setUser(null)
+    } catch (err) {
+      console.error('Logout fejlede:', err)
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      loading, 
-      error, 
-      login, 
-      logout, 
-      register 
+    <AuthContext.Provider value={{
+      user,
+      loading,
+      error,
+      login,
+      logout,
+      register
     }}>
       {children}
     </AuthContext.Provider>
