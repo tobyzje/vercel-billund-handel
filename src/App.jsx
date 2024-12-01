@@ -1,10 +1,9 @@
-import { useEffect } from 'react'
-import { useAuth } from './context/AuthContext'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/layout/Layout'
 import AdminPanel from './components/admin/AdminPanel'
 import Login from './components/auth/Login'
 import Register from './components/auth/Register'
+import EventList from './components/events/EventList'
 
 function ProtectedRoute({ children, allowedRoles = [] }) {
   const { user, loading } = useAuth()
