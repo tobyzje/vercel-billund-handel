@@ -1,11 +1,12 @@
 require('dotenv').config()
 const express = require('express')
-const mongoose = require('mongoose')
+const mongoose = require('sequelize')
 const cors = require('cors')
 const cookieParser = require('cookie-parser')
 const authRoutes = require('./routes/auth')
 const eventRoutes = require('./routes/events')
 const redis = require('./config/redis')
+const sequelize = require('./config/database.js')
 
 const app = express()
 
@@ -34,6 +35,21 @@ try {
   }
 } catch (error) {
   console.error('❌ Redis forbindelsesfejl:', error)
+  process.exit(1)
+}
+
+// Test database connection
+try {
+  await sequelize.authenticate()
+  console.log('✅ Database forbindelse etableret')
+  
+  // Sync models (i development)
+  if (process.env.NODE_ENV === 'development') {
+    await sequelize.sync({ alter: true })
+    console.log('✅ Database modeller synkroniseret')
+  }
+} catch (error) {
+  console.error('❌ Database forbindelsesfejl:', error)
   process.exit(1)
 }
 
