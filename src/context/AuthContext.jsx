@@ -81,7 +81,7 @@ export function AuthProvider({ children }) {
         password,
         options: {
           data: { name, role: 'user' },
-          emailRedirectTo: 'https://billund-handelsforening.vercel.app/auth/callback'
+          emailRedirectTo: 'https://vercel-billund-handel.vercel.app/auth/callback'
         }
       })
 

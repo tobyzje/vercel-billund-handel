@@ -5,8 +5,9 @@ import Login from './components/auth/Login'
 import Register from './components/auth/Register'
 import EventList from './components/events/EventList'
 import { useRealtime } from './hooks/useRealtime'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from './config/supabase'
+import { useNavigate } from 'react-router-dom'
 
 function ProtectedRoute({ children, allowedRoles = [] }) {
   const { user, loading } = useAuth()
@@ -23,15 +24,37 @@ function ProtectedRoute({ children, allowedRoles = [] }) {
 }
 
 function AuthCallback() {
-  useEffect(() => {
-    supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN') {
-        window.location.href = '/'
-      }
-    })
-  }, [])
+  const navigate = useNavigate()
+  const [error, setError] = useState(null)
 
-  return <div>Bekræfter login...</div>
+  useEffect(() => {
+    const handleCallback = async () => {
+      try {
+        const { error } = await supabase.auth.getSession()
+        if (error) throw error
+        navigate('/')
+      } catch (err) {
+        console.error('Auth callback error:', err)
+        setError(err.message)
+      }
+    }
+
+    handleCallback()
+  }, [navigate])
+
+  if (error) {
+    return (
+      <div className="p-4 text-red-600">
+        Fejl ved login: {error}
+      </div>
+    )
+  }
+
+  return (
+    <div className="p-4">
+      Logger ind...
+    </div>
+  )
 }
 
 function App() {
