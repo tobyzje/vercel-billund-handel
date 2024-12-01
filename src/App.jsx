@@ -1,12 +1,24 @@
 import { useEffect } from 'react'
 import { useAuth } from './context/AuthContext'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/layout/Layout'
 import AdminPanel from './components/admin/AdminPanel'
 import Login from './components/auth/Login'
 import Register from './components/auth/Register'
-import AdminRoute from './components/auth/AdminRoute'
-import EventCalendar from './components/public/EventCalendar'
+
+function ProtectedRoute({ children, allowedRoles = [] }) {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return <div>Loading...</div>
+  }
+
+  if (!user || (allowedRoles.length > 0 && !allowedRoles.includes(user.user_metadata?.role))) {
+    return <Navigate to="/login" replace />
+  }
+
+  return children
+}
 
 function App() {
   const { checkAuth } = useAuth()
@@ -20,7 +32,6 @@ function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           {/* Offentlige routes */}
-          <Route path="kalender" element={<EventCalendar />} />
           <Route path="login" element={<Login />} />
           <Route path="opret-konto" element={<Register />} />
 
@@ -28,9 +39,9 @@ function App() {
           <Route 
             path="admin/*" 
             element={
-              <AdminRoute>
+              <ProtectedRoute allowedRoles={['admin', 'webmaster']}>
                 <AdminPanel />
-              </AdminRoute>
+              </ProtectedRoute>
             } 
           />
         </Route>
