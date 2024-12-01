@@ -1,40 +1,23 @@
-import { useState, useEffect } from 'react'
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { eventService } from '../../services/eventService'
 import { format } from 'date-fns'
 import { da } from 'date-fns/locale'
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { useEventStore } from '../../stores/eventStore'
+import { useAuthStore } from '../../stores/authStore'
 
 function AdminEventList() {
-  const [events, setEvents] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const { events, loading, error, fetchEvents, deleteEvent } = useEventStore()
+  const { isAdmin, isWebmaster } = useAuthStore()
   const navigate = useNavigate()
 
   useEffect(() => {
-    loadEvents()
+    fetchEvents(true) // Force refresh i admin panel
   }, [])
-
-  const loadEvents = async () => {
-    try {
-      const data = await eventService.getEvents()
-      setEvents(data)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const handleDelete = async (id) => {
     if (!window.confirm('Er du sikker på at du vil slette dette event?')) return
-
-    try {
-      await eventService.deleteEvent(id)
-      setEvents(events.filter(event => event.id !== id))
-    } catch (err) {
-      setError(err.message)
-    }
+    await deleteEvent(id)
   }
 
   if (loading) return <div>Loading...</div>
@@ -44,12 +27,14 @@ function AdminEventList() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Events</h1>
-        <button
-          onClick={() => navigate('/admin/create-event')}
-          className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-        >
-          Opret nyt event
-        </button>
+        {(isAdmin() || isWebmaster()) && (
+          <button
+            onClick={() => navigate('/admin/create-event')}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+          >
+            Opret nyt event
+          </button>
+        )}
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -87,31 +72,36 @@ function AdminEventList() {
                   <div className="text-sm font-medium text-gray-900">
                     {event.title}
                   </div>
+                  <div className="text-sm text-gray-500">
+                    Oprettet af: {event.created_by?.name}
+                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
                     {format(new Date(event.date), 'dd. MMMM yyyy', { locale: da })}
                   </div>
-                  <div className="text-sm text-gray-500">
-                    {event.time}
-                  </div>
+                  <div className="text-sm text-gray-500">{event.time}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                   {event.location}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    onClick={() => navigate(`/admin/edit-event/${event.id}`)}
-                    className="text-blue-600 hover:text-blue-900 mr-4"
-                  >
-                    <PencilIcon className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(event.id)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    <TrashIcon className="h-5 w-5" />
-                  </button>
+                  {(isAdmin() || isWebmaster()) && (
+                    <>
+                      <button
+                        onClick={() => navigate(`/admin/edit-event/${event.id}`)}
+                        className="text-blue-600 hover:text-blue-900 mr-4"
+                      >
+                        <PencilIcon className="h-5 w-5" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(event.id)}
+                        className="text-red-600 hover:text-red-900"
+                      >
+                        <TrashIcon className="h-5 w-5" />
+                      </button>
+                    </>
+                  )}
                 </td>
               </tr>
             ))}

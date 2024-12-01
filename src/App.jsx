@@ -4,6 +4,7 @@ import AdminPanel from './components/admin/AdminPanel'
 import Login from './components/auth/Login'
 import Register from './components/auth/Register'
 import EventList from './components/events/EventList'
+import { useRealtime } from './hooks/useRealtime'
 
 function ProtectedRoute({ children, allowedRoles = [] }) {
   const { user, loading } = useAuth()
@@ -20,6 +21,8 @@ function ProtectedRoute({ children, allowedRoles = [] }) {
 }
 
 function App() {
+  useRealtime()
+
   return (
     <Router>
       <Routes>

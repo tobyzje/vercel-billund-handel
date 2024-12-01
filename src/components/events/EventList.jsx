@@ -2,26 +2,14 @@ import { useState, useEffect } from 'react'
 import { eventService } from '../../services/eventService'
 import { format } from 'date-fns'
 import { da } from 'date-fns/locale'
+import { useEventStore } from '../../stores/eventStore'
 
 function EventList() {
-  const [events, setEvents] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const { events, loading, error, fetchEvents } = useEventStore()
 
   useEffect(() => {
-    loadEvents()
+    fetchEvents()
   }, [])
-
-  const loadEvents = async () => {
-    try {
-      const data = await eventService.getEvents()
-      setEvents(data)
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
 
   if (loading) return <div>Loading...</div>
   if (error) return <div>Error: {error}</div>
@@ -43,6 +31,9 @@ function EventList() {
             <p className="text-gray-600">{event.time}</p>
             <p className="text-gray-600">{event.location}</p>
             <p className="mt-2">{event.description}</p>
+            <p className="text-sm text-gray-500 mt-2">
+              Oprettet af: {event.created_by?.name}
+            </p>
           </div>
         </div>
       ))}
