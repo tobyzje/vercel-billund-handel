@@ -27,26 +27,41 @@ router.get('/test', async (req, res) => {
 // Login route
 router.post('/login', async (req, res) => {
   try {
+    res.setHeader('Content-Type', 'application/json');
+    
     const { email, password } = req.body
 
-    const user = await User.findOne({ email })
+    // Valider input
+    if (!email || !password) {
+      return res.status(400).json({ 
+        message: 'Email og password er påkrævet' 
+      })
+    }
+
+    const user = await User.findOne({ where: { email } })
     if (!user) {
-      return res.status(401).json({ message: 'Ugyldig email eller adgangskode' })
+      return res.status(401).json({ 
+        message: 'Ugyldig email eller adgangskode' 
+      })
     }
 
     if (!user.active) {
-      return res.status(401).json({ message: 'Konto er deaktiveret' })
+      return res.status(401).json({ 
+        message: 'Konto er deaktiveret' 
+      })
     }
 
     const isMatch = await user.comparePassword(password)
     if (!isMatch) {
-      return res.status(401).json({ message: 'Ugyldig email eller adgangskode' })
+      return res.status(401).json({ 
+        message: 'Ugyldig email eller adgangskode' 
+      })
     }
 
-    await user.updateLastLogin()
+    await user.update({ lastLogin: new Date() })
 
     const token = jwt.sign(
-      { userId: user._id },
+      { userId: user.id },
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     )
@@ -59,17 +74,20 @@ router.post('/login', async (req, res) => {
     })
 
     const userResponse = {
-      id: user._id,
+      id: user.id,
       name: user.name,
       email: user.email,
       role: user.role,
       lastLogin: user.lastLogin
     }
 
-    res.json({ user: userResponse })
+    return res.json({ user: userResponse })
   } catch (error) {
     console.error('Login fejl:', error)
-    res.status(500).json({ message: 'Server fejl ved login' })
+    return res.status(500).json({ 
+      message: 'Server fejl ved login',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    })
   }
 })
 

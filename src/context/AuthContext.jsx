@@ -52,8 +52,13 @@ export function AuthProvider({ children }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ email, password }),
-        credentials: 'include' // Vigtigt for at håndtere cookies
+        credentials: 'include'
       })
+
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Server svarede ikke med JSON");
+      }
 
       if (!response.ok) {
         const errorData = await response.json()
@@ -66,6 +71,7 @@ export function AuthProvider({ children }) {
       
       return data.user
     } catch (err) {
+      console.error('Login error:', err)
       setError(err.message)
       throw err
     } finally {
