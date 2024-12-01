@@ -1,92 +1,66 @@
-const mongoose = require('mongoose')
-const bcrypt = require('bcryptjs')
+import { createHash } from 'crypto'
+import bcrypt from 'bcryptjs'
+import redis, { redisHelpers } from '../config/redis.js'
 
-const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: [true, 'Navn er påkrævet'],
-    trim: true,
-    minlength: [2, 'Navn skal være mindst 2 tegn'],
-    maxlength: [50, 'Navn må højst være 50 tegn']
-  },
-  email: {
-    type: String,
-    required: [true, 'Email er påkrævet'],
-    unique: true,
-    lowercase: true,
-    trim: true,
-    match: [/^\S+@\S+\.\S+$/, 'Ugyldig email adresse']
-  },
-  password: {
-    type: String,
-    required: [true, 'Adgangskode er påkrævet'],
-    minlength: [6, 'Adgangskode skal være mindst 6 tegn']
-  },
-  role: {
-    type: String,
-    enum: ['user', 'admin', 'webmaster'],
-    default: 'user'
-  },
-  lastLogin: {
-    type: Date,
-    default: null
-  },
-  active: {
-    type: Boolean,
-    default: true
-  },
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    default: null
-  }
-}, {
-  timestamps: true
-})
+class User {
+  static async create(userData) {
+    const { name, email, password, role = 'user' } = userData
+    
+    // Check if user exists
+    const existingUser = await redisHelpers.getUserByEmail(email)
+    if (existingUser) {
+      throw new Error('Bruger eksisterer allerede')
+    }
 
-// Password hashing
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) return next()
-  
-  try {
+    // Hash password
     const salt = await bcrypt.genSalt(10)
-    this.password = await bcrypt.hash(this.password, salt)
-    next()
-  } catch (error) {
-    next(error)
+    const hashedPassword = await bcrypt.hash(password, salt)
+
+    const userId = createHash('md5').update(email).digest('hex')
+    const user = {
+      id: userId,
+      name,
+      email: email.toLowerCase(),
+      password: hashedPassword,
+      role,
+      active: true,
+      createdAt: new Date().toISOString(),
+      lastLogin: null
+    }
+
+    // Save to Redis
+    await redisHelpers.createUser(user)
+
+    // Return user without password
+    const { password: _, ...userWithoutPassword } = user
+    return userWithoutPassword
   }
-})
 
-// Password verification
-userSchema.methods.comparePassword = async function(candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password)
+  static async findByEmail(email) {
+    const userId = await redis.get(`user:email:${email.toLowerCase()}`)
+    if (!userId) return null
+    
+    const user = await redis.hgetall(`user:${userId}`)
+    return user || null
+  }
+
+  static async findById(id) {
+    const user = await redis.hgetall(`user:${id}`)
+    if (!user) return null
+    
+    const { password: _, ...userWithoutPassword } = user
+    return userWithoutPassword
+  }
+
+  static async updateLastLogin(id) {
+    const lastLogin = new Date().toISOString()
+    await redis.hset(`user:${id}`, { lastLogin })
+    return lastLogin
+  }
+
+  static async comparePassword(storedPassword, candidatePassword) {
+    return bcrypt.compare(candidatePassword, storedPassword)
+  }
 }
 
-// Admin creation
-userSchema.statics.createAdmin = async function(userData, createdBy) {
-  const user = new this({
-    ...userData,
-    role: 'admin',
-    active: true,
-    createdBy
-  })
-  return user.save()
-}
-
-// Webmaster creation
-userSchema.statics.createWebmaster = async function(userData) {
-  const user = new this({
-    ...userData,
-    role: 'webmaster',
-    active: true
-  })
-  return user.save()
-}
-
-// Instance method to update last login
-userSchema.methods.updateLastLogin = function() {
-  this.lastLogin = new Date()
-  return this.save()
-}
-
-module.exports = mongoose.model('User', userSchema) 
+export default User 

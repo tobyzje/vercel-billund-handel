@@ -1,47 +1,53 @@
-const mongoose = require('mongoose')
+import { createHash } from 'crypto'
+import redis from '../config/redis.js'
 
-const eventSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: [true, 'Titel er påkrævet'],
-    trim: true
-  },
-  date: {
-    type: Date,
-    required: [true, 'Dato er påkrævet']
-  },
-  time: {
-    type: String,
-    required: [true, 'Tidspunkt er påkrævet']
-  },
-  location: {
-    type: String,
-    required: [true, 'Lokation er påkrævet'],
-    trim: true
-  },
-  description: {
-    type: String,
-    required: [true, 'Beskrivelse er påkrævet'],
-    trim: true
-  },
-  imageUrl: {
-    type: String,
-    required: [true, 'Billede er påkrævet']
-  },
-  imagePublicId: {
-    type: String,
-    required: true
-  },
-  imageThumbnail: {
-    type: String
-  },
-  createdBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+class Event {
+  static async create(eventData) {
+    const { title, date, time, location, description, imageUrl, createdBy } = eventData
+    
+    const event = {
+      id: createHash('md5').update(`${title}-${Date.now()}`).digest('hex'),
+      title,
+      date,
+      time,
+      location,
+      description,
+      imageUrl,
+      imagePublicId: eventData.imagePublicId,
+      createdBy,
+      createdAt: new Date().toISOString()
+    }
+
+    // Save to Redis
+    await redis.hset(`event:${event.id}`, event)
+    await redis.zadd('events:by-date', { 
+      score: new Date(date).getTime(),
+      member: event.id 
+    })
+
+    return event
   }
-}, {
-  timestamps: true
-})
 
-module.exports = mongoose.model('Event', eventSchema) 
+  static async findAll() {
+    const eventIds = await redis.zrange('events:by-date', 0, -1)
+    const events = await Promise.all(
+      eventIds.map(id => redis.hgetall(`event:${id}`))
+    )
+    return events
+  }
+
+  static async findById(id) {
+    return redis.hgetall(`event:${id}`)
+  }
+
+  static async delete(id) {
+    const event = await this.findById(id)
+    if (!event) return false
+
+    await redis.del(`event:${id}`)
+    await redis.zrem('events:by-date', id)
+    return true
+  }
+}
+
+export default Event 
