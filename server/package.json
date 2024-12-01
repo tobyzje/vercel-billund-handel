@@ -9,6 +9,7 @@
     "dev": "nodemon server.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.46.2",
     "@upstash/redis": "^1.28.0",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^1.41.3",
