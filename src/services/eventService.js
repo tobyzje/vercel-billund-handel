@@ -38,14 +38,8 @@ export const eventService = {
 
   async getEvents() {
     const { data, error } = await supabase
-      .from('events')
-      .select(`
-        *,
-        created_by (
-          name,
-          role
-        )
-      `)
+      .from('events_with_creator')
+      .select('*')
       .order('date', { ascending: true })
 
     if (error) throw error
