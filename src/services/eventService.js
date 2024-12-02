@@ -25,7 +25,10 @@ export const eventService = {
           image_path: fileName,
           created_by: (await supabase.auth.getUser()).data.user.id
         }])
-        .select('*, created_by(name)')
+        .select(`
+          *,
+          profiles!inner(name)
+        `)
         .single()
 
       if (error) throw error
@@ -38,8 +41,11 @@ export const eventService = {
 
   async getEvents() {
     const { data, error } = await supabase
-      .from('events_with_creator')
-      .select('*')
+      .from('events')
+      .select(`
+        *,
+        profiles!inner(name)
+      `)
       .order('date', { ascending: true })
 
     if (error) throw error
