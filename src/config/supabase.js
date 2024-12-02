@@ -4,11 +4,10 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables:', { supabaseUrl, supabaseAnonKey })
   throw new Error('Missing Supabase environment variables')
 }
 
-const supabaseOptions = {
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
@@ -19,15 +18,11 @@ const supabaseOptions = {
       eventsPerSecond: 10
     }
   }
-}
+})
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, supabaseOptions)
-
-// Test connection
-supabase.auth.getSession().then(({ data, error }) => {
-  if (error) {
-    console.error('Supabase connection error:', error)
-  } else {
-    console.log('Supabase connection successful')
+// Test forbindelsen
+supabase.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_IN') {
+    console.log('Signed in:', session?.user?.email)
   }
 }) 

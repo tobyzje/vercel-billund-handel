@@ -8,6 +8,7 @@ import { useRealtime } from './hooks/useRealtime'
 import { useEffect, useState } from 'react'
 import { supabase } from './config/supabase'
 import { useNavigate } from 'react-router-dom'
+import { useAuth } from './context/AuthContext'
 
 function ProtectedRoute({ children, allowedRoles = [] }) {
   const { user, loading } = useAuth()
