@@ -14,16 +14,35 @@ const startServer = async () => {
   try {
     const app = express()
 
-    // Middleware
+    // Tillad requests fra både localhost og Vercel domænet
+    const allowedOrigins = [
+      'http://localhost:5173',
+      'https://vercel-billund-handel.vercel.app',
+      'https://vercel-billund-handel-75ztmmh7t-tobyzjes-projects.vercel.app'
+    ]
+
+    // CORS middleware med credentials support
     app.use(cors({
-      origin: ['http://localhost:5173', 'https://vercel-billund-handel.vercel.app'],
+      origin: function(origin, callback) {
+        // Tillad requests uden origin (f.eks. fra Postman)
+        if (!origin) return callback(null, true)
+        
+        if (allowedOrigins.indexOf(origin) === -1) {
+          return callback(new Error('CORS policy violation'), false)
+        }
+        return callback(null, true)
+      },
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization']
+      allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
     }))
+
     app.use(express.json())
     app.use(cookieParser())
     app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
+
+    // Pre-flight OPTIONS request handler
+    app.options('*', cors())
 
     // Error handling
     app.use((err, req, res, next) => {
