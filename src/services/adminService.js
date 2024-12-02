@@ -1,69 +1,15 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseServiceRole = import.meta.env.VITE_SUPABASE_SERVICE_ROLE
-
-if (!supabaseUrl || !supabaseServiceRole) {
-  console.error('Missing Supabase environment variables:', { 
-    url: supabaseUrl, 
-    serviceRole: !!supabaseServiceRole 
-  })
-  throw new Error('Missing required Supabase configuration')
-}
+const supabaseUrl = 'https://tnojdniodflqvbqsvwli.supabase.co'
+const supabaseServiceRole = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRub2pkbmlvZGZscXZicXN2d2xpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcxMDg4MjQ3MCwiZXhwIjoyMDI2NDU4NDcwfQ.xYMl2WovQoWVUTYj_QsmLd_nRSK4oQYTA9RyiUgxedI'
 
 const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRole, {
   auth: {
     autoRefreshToken: false,
     persistSession: false,
     detectSessionInUrl: false
-  },
-  headers: {
-    'apikey': supabaseServiceRole
-  },
-  global: {
-    headers: {
-      'apikey': supabaseServiceRole,
-      'Authorization': `Bearer ${supabaseServiceRole}`
-    }
   }
 })
-
-// Tilføj auth header til alle requests
-supabaseAdmin.rest.headers = {
-  'apikey': supabaseServiceRole,
-  'Authorization': `Bearer ${supabaseServiceRole}`
-}
-
-// Test forbindelsen ved opstart med mere detaljeret fejlhåndtering
-const testConnection = async () => {
-  try {
-    console.log('Testing Supabase admin connection...')
-    console.log('Headers:', supabaseAdmin.rest.headers)
-    
-    const { data, error } = await supabaseAdmin.auth.admin.listUsers()
-    
-    if (error) {
-      console.error('Connection test failed:', error)
-      throw error
-    }
-    
-    console.log('✅ Admin service initialized successfully')
-    console.log('Found', data.users.length, 'users')
-    return true
-  } catch (err) {
-    console.error('❌ Admin service initialization failed:', err)
-    console.error('Error details:', {
-      message: err.message,
-      status: err.status,
-      name: err.name,
-      details: err.details
-    })
-    throw err
-  }
-}
-
-// Kør test ved opstart
-testConnection()
 
 export const adminService = {
   async createUser(userData) {
@@ -140,21 +86,6 @@ export const adminService = {
       return profiles
     } catch (error) {
       console.error('Get users error:', error)
-      throw error
-    }
-  },
-
-  // Test forbindelsen uden at kræve en auth session
-  async testConnection() {
-    try {
-      // Test admin adgang
-      const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers()
-      
-      if (error) throw error
-      console.log('Supabase admin connection test successful:', users.length, 'users found')
-      return true
-    } catch (error) {
-      console.error('Supabase admin connection test failed:', error)
       throw error
     }
   }
