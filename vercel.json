@@ -1,15 +1,31 @@
 {
-  "rewrites": [
+  "version": 2,
+  "builds": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "server/server.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist" }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "server/server.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "dist/$1"
     }
   ],
   "env": {
-    "VITE_SUPABASE_URL": "https://tnojdniodflqvbqsvwli.supabase.co",
-    "VITE_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRub2pkbmlvZGZscXZicXN2d2xpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTA4ODI0NzAsImV4cCI6MjAyNjQ1ODQ3MH0.GYyWkwj9nksjFy2mJzSqYcqVAoFNbpXJiLZqAIzE7Ow"
-  },
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "framework": "vite"
+    "DB_HOST": "mysql97.unoeuro.com",
+    "DB_USER": "nationsnetwork_dk",
+    "DB_PASSWORD": "Fw3AtEhydgaebDpBx624",
+    "DB_NAME": "nationsnetwork_dk_db_bhandel",
+    "JWT_SECRET": "dit_secret_her"
+  }
 } 
