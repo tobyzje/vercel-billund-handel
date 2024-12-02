@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { adminService } from '../../services/adminService'
 import { useAuth } from '../../context/AuthContext'
 
 function UserManagement() {

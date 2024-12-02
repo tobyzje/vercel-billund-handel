@@ -1,54 +1,54 @@
-import { supabase } from '../config/supabase'
+const API_URL = import.meta.env.VITE_API_URL
 
 export const eventService = {
+  async getEvents() {
+    try {
+      const response = await fetch(`${API_URL}/events`, {
+        credentials: 'include'
+      })
+      if (!response.ok) throw new Error('Kunne ikke hente events')
+      return response.json()
+    } catch (error) {
+      console.error('Get events error:', error)
+      throw error
+    }
+  },
+
   async createEvent(eventData, imageFile) {
     try {
-      // Upload billede
-      const fileName = `${Date.now()}-${imageFile.name}`
-      const { data: imageData, error: uploadError } = await supabase.storage
-        .from('event-images')
-        .upload(fileName, imageFile)
+      const formData = new FormData()
+      Object.keys(eventData).forEach(key => {
+        formData.append(key, eventData[key])
+      })
+      if (imageFile) {
+        formData.append('image', imageFile)
+      }
 
-      if (uploadError) throw uploadError
+      const response = await fetch(`${API_URL}/events`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData
+      })
 
-      // Få public URL til billedet
-      const { data: { publicUrl } } = supabase.storage
-        .from('event-images')
-        .getPublicUrl(fileName)
-
-      // Opret event
-      const { data: event, error } = await supabase
-        .from('events')
-        .insert([{
-          ...eventData,
-          image_url: publicUrl,
-          image_path: fileName,
-          created_by: (await supabase.auth.getUser()).data.user.id
-        }])
-        .select(`
-          *,
-          profiles!inner(name)
-        `)
-        .single()
-
-      if (error) throw error
-      return event
+      if (!response.ok) throw new Error('Kunne ikke oprette event')
+      return response.json()
     } catch (error) {
       console.error('Create event error:', error)
       throw error
     }
   },
 
-  async getEvents() {
-    const { data, error } = await supabase
-      .from('events')
-      .select(`
-        *,
-        profiles!inner(name)
-      `)
-      .order('date', { ascending: true })
-
-    if (error) throw error
-    return data
+  async deleteEvent(id) {
+    try {
+      const response = await fetch(`${API_URL}/events/${id}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+      if (!response.ok) throw new Error('Kunne ikke slette event')
+      return response.json()
+    } catch (error) {
+      console.error('Delete event error:', error)
+      throw error
+    }
   }
 } 

@@ -4,11 +4,11 @@ import { format } from 'date-fns'
 import { da } from 'date-fns/locale'
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { useEventStore } from '../../stores/eventStore'
-import { useAuthStore } from '../../stores/authStore'
+import { useRole } from '../../hooks/useRole'
 
 function AdminEventList() {
   const { events, loading, error, fetchEvents, deleteEvent } = useEventStore()
-  const { isAdmin, isWebmaster } = useAuthStore()
+  const { isAdmin, isWebmaster } = useRole()
   const navigate = useNavigate()
 
   useEffect(() => {

@@ -1,98 +1,96 @@
 import { createContext, useContext, useState, useEffect } from 'react'
-import { supabase } from '../config/supabase'
 
 const AuthContext = createContext(null)
+const API_URL = import.meta.env.VITE_API_URL
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
+  // Check initial auth status
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN') {
-        setUser(session?.user ?? null)
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null)
+    fetch(`${API_URL}/auth/me`, {
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json'
       }
-      setLoading(false)
     })
-
-    // Initial session check
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
-
-    return () => subscription.unsubscribe()
+      .then(res => {
+        if (!res.ok) throw new Error('Ikke logget ind')
+        return res.json()
+      })
+      .then(data => {
+        if (data.user) setUser(data.user)
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false))
   }, [])
 
   const login = async (email, password) => {
     try {
-      setLoading(true)
-      setError(null)
-
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include'
       })
 
-      if (error) {
-        console.error('Login error:', error)
+      if (!response.ok) {
+        const error = await response.json()
         throw new Error(error.message)
       }
 
-      if (!data?.user) {
-        throw new Error('Ingen bruger fundet')
-      }
-
+      const data = await response.json()
       setUser(data.user)
       return data.user
     } catch (err) {
-      console.error('Login error:', err)
       setError(err.message)
       throw err
-    } finally {
-      setLoading(false)
     }
   }
 
   const logout = async () => {
     try {
-      setLoading(true)
-      const { error } = await supabase.auth.signOut()
-      if (error) throw error
+      const response = await fetch(`${API_URL}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message)
+      }
+
       setUser(null)
     } catch (err) {
-      console.error('Logout error:', err)
       setError(err.message)
-    } finally {
-      setLoading(false)
+      throw err
     }
   }
 
   const register = async (name, email, password) => {
     try {
-      setLoading(true)
-      setError(null)
-      
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { name, role: 'user' },
-          emailRedirectTo: 'https://vercel-billund-handel.vercel.app/auth/callback'
-        }
+      const response = await fetch(`${API_URL}/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name, email, password }),
+        credentials: 'include'
       })
 
-      if (error) throw error
-      return data.user
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message)
+      }
+
+      return response.json()
     } catch (err) {
-      console.error('Register error:', err)
       setError(err.message)
       throw err
-    } finally {
-      setLoading(false)
     }
   }
 
